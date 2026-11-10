@@ -47,6 +47,8 @@ function formatDate(value: string) {
 function App() {
   const [session, setSession] = useState<Session | null>(null)
   const [authLoading, setAuthLoading] = useState(true)
+  const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signin')
+  const [authSubmitting, setAuthSubmitting] = useState(false)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [authError, setAuthError] = useState('')
@@ -83,13 +85,28 @@ function App() {
     return () => subscription.unsubscribe()
   }, [])
 
-  async function signIn(event: FormEvent<HTMLFormElement>) {
+  async function handleAuth(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     if (!supabase) return
     setAuthError('')
     setAuthMessage('')
-    const { error: signInError } = await supabase.auth.signInWithPassword({ email, password })
-    if (signInError) setAuthError(signInError.message)
+    setAuthSubmitting(true)
+    try {
+      if (authMode === 'signup') {
+        const { data, error: signUpError } = await supabase.auth.signUp({ email, password })
+        if (signUpError) throw signUpError
+        setAuthMessage(data.session
+          ? 'Tu cuenta fue creada. Ya puedes comenzar a usar el sistema.'
+          : 'Cuenta creada. Revisa tu correo para confirmar la cuenta y luego inicia sesión.')
+      } else {
+        const { error: signInError } = await supabase.auth.signInWithPassword({ email, password })
+        if (signInError) throw signInError
+      }
+    } catch (authFailure) {
+      setAuthError(authFailure instanceof Error ? authFailure.message : 'No se pudo completar la solicitud.')
+    } finally {
+      setAuthSubmitting(false)
+    }
   }
 
   async function searchVehicle(event?: FormEvent<HTMLFormElement>, plateValue = searchPlate) {
@@ -218,20 +235,31 @@ function App() {
           <div className="login-decoration"><CarIcon /><span>REGISTRO · HISTORIAL · CONTROL</span></div>
         </section>
         <section className="login-panel">
-          <form className="login-card" onSubmit={signIn}>
-            <p className="eyebrow">BIENVENIDO</p>
-            <h2>Iniciar sesión</h2>
-            <p className="muted">Ingresa con la cuenta del taller para continuar.</p>
+          <form className="login-card" onSubmit={(event) => void handleAuth(event)}>
+            <p className="eyebrow">{authMode === 'signup' ? 'REGISTRO' : 'BIENVENIDO'}</p>
+            <h2>{authMode === 'signup' ? 'Crear cuenta' : 'Iniciar sesión'}</h2>
+            <p className="muted">{authMode === 'signup' ? 'Regístrate con tu correo y crea una contraseña.' : 'Ingresa con tu cuenta para continuar.'}</p>
             <label>Correo electrónico
               <input type="email" autoComplete="email" required value={email} onChange={(event) => setEmail(event.target.value)} placeholder="taller@correo.com" />
             </label>
             <label>Contraseña
-              <input type="password" autoComplete="current-password" required value={password} onChange={(event) => setPassword(event.target.value)} placeholder="Tu contraseña" />
+              <input type="password" autoComplete={authMode === 'signup' ? 'new-password' : 'current-password'} minLength={6} required value={password} onChange={(event) => setPassword(event.target.value)} placeholder={authMode === 'signup' ? 'Mínimo 6 caracteres' : 'Tu contraseña'} />
             </label>
             {authError && <p className="alert error-alert">{authError}</p>}
             {authMessage && <p className="alert success-alert">{authMessage}</p>}
-            <button className="primary-button full-button" type="submit">Entrar <ArrowIcon /></button>
-            <p className="login-footnote">La cuenta se crea desde Authentication → Users en Supabase.</p>
+            {authMode === 'signup' && <p className="login-footnote">Las cuentas registradas comparten acceso a los datos del taller.</p>}
+            <button className="primary-button full-button" type="submit" disabled={authSubmitting}>{authSubmitting ? 'Un momento...' : authMode === 'signup' ? 'Crear cuenta' : 'Entrar'} <ArrowIcon /></button>
+            <p className="auth-switch">
+              {authMode === 'signup' ? '¿Ya tienes una cuenta?' : '¿No tienes cuenta?'}
+              {' '}
+              <button type="button" onClick={() => {
+                setAuthMode(authMode === 'signup' ? 'signin' : 'signup')
+                setAuthError('')
+                setAuthMessage('')
+              }}>
+                {authMode === 'signup' ? 'Inicia sesión' : 'Crear una cuenta'}
+              </button>
+            </p>
           </form>
         </section>
       </main>

@@ -166,6 +166,9 @@ code { color: #455cc5; background: #f0f2ff; padding: 2px 4px; border-radius: 4px
 .login-card input { height: 44px; font-size: 13px; }
 .full-button { width: 100%; min-height: 46px; }
 .login-footnote { color: #8c96a7; text-align: center; font-size: 11px; line-height: 1.5; margin: 0; }
+.auth-switch { color: #778398; text-align: center; font-size: 12px; margin: 0; }
+.auth-switch button { padding: 0; border: 0; color: var(--blue); background: transparent; font-size: inherit; font-weight: 600; }
+.auth-switch button:hover { color: var(--blue-dark); text-decoration: underline; }
 
 @media (max-width: 1000px) {
   .dashboard-grid { grid-template-columns: minmax(0, 1.2fr) minmax(330px, .9fr); gap: 15px; }

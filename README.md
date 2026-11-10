@@ -10,7 +10,7 @@ Aplicación web para buscar vehículos por placa, guardar datos opcionales del c
 ## Preparar Supabase
 
 1. En el panel de Supabase abre **SQL Editor**, pega y ejecuta [`supabase/schema.sql`](./supabase/schema.sql).
-2. En **Authentication → Users**, crea la cuenta de acceso del taller.
+2. En **Authentication → Sign In / Providers → Email**, permite el registro de usuarios. La aplicación ofrece inicio de sesión y creación de cuenta.
 3. En **Project Settings → API** copia la Project URL y la clave pública `anon`/`publishable`.
 4. Copia `.env.example` a `.env.local` y completa:
 
@@ -19,7 +19,7 @@ Aplicación web para buscar vehículos por placa, guardar datos opcionales del c
    VITE_SUPABASE_ANON_KEY=tu-clave-publica
    ```
 
-   La clave pública está diseñada para estar en la aplicación; las políticas RLS del esquema limitan las operaciones a usuarios autenticados. **Nunca uses ni publiques la clave `service_role`.**
+   Usa la Project URL tal como aparece en Supabase, sin agregar `/rest/v1/`. La clave pública está diseñada para estar en la aplicación; las políticas RLS del esquema limitan las operaciones a usuarios autenticados. El registro abierto permite que cualquier persona cree una cuenta y acceda a los mismos registros compartidos del taller. **Nunca uses ni publiques la clave `service_role`.**
 
 ## Ejecutar
 
@@ -34,4 +34,4 @@ Para comprobar la compilación de producción:
 npm run build
 ```
 
-La placa se guarda en mayúsculas y sin espacios. El nombre y teléfono del cliente son opcionales. Para cada visita se requiere placa, kilometraje, aceite y fecha/hora; las observaciones son opcionales. Las cuentas autenticadas comparten el historial del taller. Los registros de mantenimiento son inmutables desde la aplicación para conservar el historial.
+La placa se guarda en mayúsculas y sin espacios. El nombre y teléfono del cliente son opcionales. Para cada visita se requiere placa, kilometraje, aceite y fecha/hora; las observaciones son opcionales. Las cuentas autenticadas comparten el historial del taller. Los registros de mantenimiento son inmutables desde la aplicación para conservar el historial. Si Supabase solicita confirmar el correo, hay que abrir el enlace recibido antes de iniciar sesión.
