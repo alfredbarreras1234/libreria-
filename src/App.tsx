@@ -321,6 +321,15 @@ function App() {
     if (signOutError) setAuthError(signOutError.message)
   }
 
+  async function downloadRecordImage(record: MaintenanceImageData) {
+    setError('')
+    try {
+      await downloadMaintenanceImage(record)
+    } catch (imageError) {
+      setError(imageError instanceof Error ? imageError.message : 'No se pudo crear la imagen.')
+    }
+  }
+
   if (!supabase) {
     return (
       <main className="setup-screen">
@@ -420,13 +429,7 @@ function App() {
             <span>{success}</span>
             <div className="saved-alert-actions">
               {savedImage && (
-                <button className="image-download-button" type="button" onClick={async () => {
-                  try {
-                    await downloadMaintenanceImage(savedImage)
-                  } catch (imageError) {
-                    setError(imageError instanceof Error ? imageError.message : 'No se pudo crear la imagen.')
-                  }
-                }}>
+                <button className="image-download-button" type="button" onClick={() => void downloadRecordImage(savedImage)}>
                   <DownloadIcon /> Descargar imagen
                 </button>
               )}
@@ -489,6 +492,16 @@ function App() {
                           <div className="record-topline"><span className="record-date"><CalendarIcon />{formatDate(record.occurred_at)}</span><span className="record-mileage"><GaugeIcon />{record.mileage.toLocaleString('es')} km</span></div>
                           <div className="record-oil"><span className="oil-icon"><DropIcon /></span><div><span className="field-caption">ACEITE</span><strong>{record.oil}</strong></div></div>
                           {record.observation && <p className="record-observation">{record.observation}</p>}
+                          <div className="record-actions">
+                            <button
+                              className="image-download-button"
+                              type="button"
+                              onClick={() => void downloadRecordImage(record)}
+                              aria-label={`Descargar PNG del servicio del ${formatDate(record.occurred_at)}`}
+                            >
+                              <DownloadIcon /> Descargar PNG
+                            </button>
+                          </div>
                         </article>
                       ))}
                     </div>
