@@ -35,4 +35,6 @@ Para comprobar la compilación de producción:
 npm run build
 ```
 
+El proyecto permite explícitamente el script `postinstall` de `esbuild` solo en la versión `0.28.2`, usada por el lockfile. En los logs de Vercel, `Unknown env config "cache-dir"` es una advertencia de configuración npm, no un error de compilación; si continúa, revisa y elimina `NPM_CONFIG_CACHE_DIR` o `npm_config_cache_dir` de las variables de entorno de Vercel, si existe.
+
 La placa se guarda en mayúsculas y sin espacios. El nombre y teléfono del cliente son opcionales. Para cada visita se requiere placa, kilometraje, aceite y fecha/hora; las observaciones son opcionales. Cada servicio en el historial tiene su propio botón para descargar opcionalmente una imagen PNG de ese servicio, tanto para mantenimientos anteriores como para el recién guardado. La imagen contiene únicamente la placa, el kilometraje, el aceite y la observación, sin datos de marca o del sitio. Las cuentas autenticadas comparten el historial del taller. Los registros de mantenimiento son inmutables desde la aplicación para conservar el historial. Si Supabase solicita confirmar el correo, hay que abrir el enlace recibido antes de iniciar sesión.
