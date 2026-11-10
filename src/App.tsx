@@ -93,7 +93,13 @@ function App() {
     setAuthSubmitting(true)
     try {
       if (authMode === 'signup') {
-        const { data, error: signUpError } = await supabase.auth.signUp({ email, password })
+        const { data, error: signUpError } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            emailRedirectTo: window.location.origin,
+          },
+        })
         if (signUpError) throw signUpError
         setAuthMessage(data.session
           ? 'Tu cuenta fue creada. Ya puedes comenzar a usar el sistema.'

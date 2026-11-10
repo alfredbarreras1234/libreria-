@@ -11,8 +11,9 @@ Aplicación web para buscar vehículos por placa, guardar datos opcionales del c
 
 1. En el panel de Supabase abre **SQL Editor**, pega y ejecuta [`supabase/schema.sql`](./supabase/schema.sql).
 2. En **Authentication → Sign In / Providers → Email**, permite el registro de usuarios. La aplicación ofrece inicio de sesión y creación de cuenta.
-3. En **Project Settings → API** copia la Project URL y la clave pública `anon`/`publishable`.
-4. Copia `.env.example` a `.env.local` y completa:
+3. En **Authentication → URL Configuration**, configura **Site URL** con la URL pública de producción en Vercel (por ejemplo, `https://tu-app.vercel.app`) y agrega esa misma URL a **Redirect URLs**. Para desarrollo local agrega también `http://localhost:5173`. El formulario de registro envía el origen actual como destino del correo de confirmación.
+4. En **Project Settings → API** copia la Project URL y la clave pública `anon`/`publishable`.
+5. Copia `.env.example` a `.env.local` y completa:
 
    ```env
    VITE_SUPABASE_URL=https://tu-proyecto.supabase.co
