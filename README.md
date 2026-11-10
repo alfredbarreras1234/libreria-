@@ -35,4 +35,4 @@ Para comprobar la compilación de producción:
 npm run build
 ```
 
-La placa se guarda en mayúsculas y sin espacios. El nombre y teléfono del cliente son opcionales. Para cada visita se requiere placa, kilometraje, aceite y fecha/hora; las observaciones son opcionales. Las cuentas autenticadas comparten el historial del taller. Los registros de mantenimiento son inmutables desde la aplicación para conservar el historial. Si Supabase solicita confirmar el correo, hay que abrir el enlace recibido antes de iniciar sesión.
+La placa se guarda en mayúsculas y sin espacios. El nombre y teléfono del cliente son opcionales. Para cada visita se requiere placa, kilometraje, aceite y fecha/hora; las observaciones son opcionales. Después de guardar un mantenimiento, se puede descargar opcionalmente una imagen PNG que contiene únicamente la placa, el kilometraje, el aceite y la observación, sin datos de marca o del sitio. Las cuentas autenticadas comparten el historial del taller. Los registros de mantenimiento son inmutables desde la aplicación para conservar el historial. Si Supabase solicita confirmar el correo, hay que abrir el enlace recibido antes de iniciar sesión.

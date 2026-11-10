@@ -21,11 +21,116 @@ type LookupResult = {
   records: MaintenanceRecord[]
 }
 
+type MaintenanceImageData = Pick<MaintenanceRecord, 'vehicle_plate' | 'mileage' | 'oil' | 'observation'>
+
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
 const supabase = supabaseUrl && supabaseAnonKey
   ? createClient(supabaseUrl, supabaseAnonKey)
   : null
+
+function wrapCanvasText(context: CanvasRenderingContext2D, text: string, maxWidth: number) {
+  const lines: string[] = []
+  for (const paragraph of text.split(/\r?\n/)) {
+    const words = paragraph.split(/\s+/).filter(Boolean)
+    if (words.length === 0) {
+      lines.push('')
+      continue
+    }
+
+    let line = ''
+    for (const word of words) {
+      const candidate = line ? `${line} ${word}` : word
+      if (line && context.measureText(candidate).width > maxWidth) {
+        lines.push(line)
+        line = word
+      } else {
+        line = candidate
+      }
+    }
+    lines.push(line)
+  }
+  return lines
+}
+
+function downloadMaintenanceImage(record: MaintenanceImageData): Promise<void> {
+  const canvas = document.createElement('canvas')
+  canvas.width = 1200
+  const context = canvas.getContext('2d')
+  if (!context) throw new Error('No se pudo crear la imagen en este navegador.')
+
+  const observation = record.observation.trim() || '—'
+  context.font = '32px Arial, sans-serif'
+  const observationLines = wrapCanvasText(context, observation, 1000)
+  const oilLines = wrapCanvasText(context, record.oil, 480)
+  const oilExtraHeight = Math.max(0, oilLines.length - 1) * 38
+  const observationLabelY = 486 + oilExtraHeight
+  const observationStartY = 546 + oilExtraHeight
+  canvas.height = Math.max(700, observationStartY + observationLines.length * 44 + 82)
+
+  context.fillStyle = '#f3f5f9'
+  context.fillRect(0, 0, canvas.width, canvas.height)
+  context.fillStyle = '#ffffff'
+  context.fillRect(48, 48, 1104, canvas.height - 96)
+  context.fillStyle = '#315ce8'
+  context.fillRect(48, 48, 1104, 12)
+
+  context.fillStyle = '#7b8495'
+  context.font = '700 22px Arial, sans-serif'
+  context.fillText('PLACA', 96, 142)
+  context.fillStyle = '#172033'
+  context.font = '700 66px Arial, sans-serif'
+  context.fillText(record.vehicle_plate, 96, 226)
+
+  context.strokeStyle = '#e8ebf1'
+  context.lineWidth = 2
+  context.beginPath()
+  context.moveTo(96, 270)
+  context.lineTo(1104, 270)
+  context.stroke()
+
+  context.fillStyle = '#7b8495'
+  context.font = '700 20px Arial, sans-serif'
+  context.fillText('KILOMETRAJE', 96, 326)
+  context.fillText('ACEITE', 625, 326)
+  context.fillStyle = '#263248'
+  context.font = '600 36px Arial, sans-serif'
+  context.fillText(`${record.mileage.toLocaleString('es')} km`, 96, 384)
+  context.font = '600 32px Arial, sans-serif'
+  oilLines.forEach((line, index) => {
+    context.fillText(line, 625, 376 + index * 38, 480)
+  })
+
+  context.beginPath()
+  context.moveTo(96, 428 + oilExtraHeight)
+  context.lineTo(1104, 428 + oilExtraHeight)
+  context.stroke()
+
+  context.fillStyle = '#7b8495'
+  context.font = '700 20px Arial, sans-serif'
+  context.fillText('OBSERVACIÓN', 96, observationLabelY)
+  context.fillStyle = '#354057'
+  context.font = '32px Arial, sans-serif'
+  observationLines.forEach((line, index) => {
+    context.fillText(line, 96, observationStartY + index * 44, 1000)
+  })
+
+  return new Promise((resolve, reject) => {
+    canvas.toBlob((blob) => {
+      if (!blob) {
+        reject(new Error('No se pudo generar la imagen.'))
+        return
+      }
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `mantenimiento-${record.vehicle_plate}.png`
+      link.click()
+      window.setTimeout(() => URL.revokeObjectURL(url), 1000)
+      resolve()
+    }, 'image/png')
+  })
+}
 
 function localDateTimeValue() {
   const now = new Date()
@@ -59,6 +164,7 @@ function App() {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
+  const [savedImage, setSavedImage] = useState<MaintenanceImageData | null>(null)
   const [form, setForm] = useState({
     plate: '',
     ownerName: '',
@@ -119,6 +225,7 @@ function App() {
     event?.preventDefault()
     const plate = normalizePlate(plateValue)
     if (!supabase || !plate) return
+    if (event) setSavedImage(null)
     setSearching(true)
     setError('')
     setSuccess('')
@@ -167,6 +274,7 @@ function App() {
     setSaving(true)
     setError('')
     setSuccess('')
+    setSavedImage(null)
     try {
       const { error: vehicleError } = await supabase.from('vehicles').upsert({
         plate,
@@ -184,6 +292,12 @@ function App() {
       })
       if (recordError) throw recordError
 
+      setSavedImage({
+        vehicle_plate: plate,
+        mileage,
+        oil: form.oil.trim(),
+        observation: form.observation.trim(),
+      })
       setSearchPlate(plate)
       await searchVehicle(undefined, plate)
       setForm((current) => ({
@@ -295,10 +409,29 @@ function App() {
           <div className="date-chip"><CalendarIcon />{new Intl.DateTimeFormat('es', { dateStyle: 'full' }).format(new Date())}</div>
         </div>
 
-        {(error || success || authError) && (
-          <div className={`alert ${error || authError ? 'error-alert' : 'success-alert'}`} role="status">
-            {error || authError || success}
-            <button className="alert-close" aria-label="Cerrar aviso" onClick={() => { setError(''); setSuccess(''); setAuthError('') }}>×</button>
+        {(error || authError) && (
+          <div className="alert error-alert" role="status">
+            {error || authError}
+            <button className="alert-close" aria-label="Cerrar aviso" onClick={() => { setError(''); setAuthError('') }}>×</button>
+          </div>
+        )}
+        {success && (
+          <div className="alert success-alert saved-alert" role="status">
+            <span>{success}</span>
+            <div className="saved-alert-actions">
+              {savedImage && (
+                <button className="image-download-button" type="button" onClick={async () => {
+                  try {
+                    await downloadMaintenanceImage(savedImage)
+                  } catch (imageError) {
+                    setError(imageError instanceof Error ? imageError.message : 'No se pudo crear la imagen.')
+                  }
+                }}>
+                  <DownloadIcon /> Descargar imagen
+                </button>
+              )}
+              <button className="alert-close" aria-label="Cerrar aviso" onClick={() => setSuccess('')}>×</button>
+            </div>
           </div>
         )}
 
@@ -420,5 +553,6 @@ function UserIcon() { return <svg viewBox="0 0 24 24" aria-hidden="true"><circle
 function PhoneIcon() { return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h10v18H7zM10 6h4m-3 12h2" /></svg> }
 function ClipboardIcon() { return <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="5" width="14" height="17" rx="2" /><path d="M9 5V3h6v2m-6 6h6m-6 4h6" /></svg> }
 function LogoutIcon() { return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 17l5-5-5-5m5 5H3m9-9h7a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-7" /></svg> }
+function DownloadIcon() { return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4m4-5 5 5 5-5m-5 5V3" /></svg> }
 
 export default App
